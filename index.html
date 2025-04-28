@@ -1,0 +1,429 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>TCG Pocket card summary</title>
+
+    <style>
+      html {
+        font-family: sans-serif;
+      }
+
+      .editable-text {
+        display: inline-block;
+        appearance: none;
+
+        min-width: 32px;
+
+        border: none;
+        border-bottom: 2px dotted gray;
+
+        cursor: text;
+
+        &:empty::after {
+          content: "";
+          color: gray;
+        }
+      }
+
+      #player-name:empty::after {
+        content: "Someone";
+      }
+
+      .cards {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 16px;
+
+        justify-content: start;
+        align-items: center;
+
+        min-height: 32px;
+
+        &:empty {
+          border: 2px dotted gray;
+
+          justify-content: center;
+
+          &::after {
+            content: "Drop card images here";
+            color: gray;
+          }
+        }
+
+        &.dragover {
+          background-color: palegreen;
+        }
+
+        & img {
+          width: 172px;
+        }
+      }
+
+      .info {
+        background-color: aliceblue;
+        border: 2px solid lightskyblue;
+        padding: 16px;
+      }
+
+      .info-header {
+        font-weight: bold;
+        display: block;
+        margin-bottom: 4px;
+      }
+
+      .hide-info {
+        appearance: none;
+        background: none;
+        text-decoration: underline;
+        border: none;
+        padding: 0;
+        font: inherit;
+        color: gray;
+        cursor: pointer;
+        margin-top: 4px;
+      }
+
+      ul {
+        margin: 0;
+      }
+
+      #trash-can {
+        position: fixed;
+        bottom: 16px;
+        right: 16px;
+
+        width: 64px;
+        height: 64px;
+
+        display: none;
+        place-items: center;
+
+        background: lightgray;
+
+        &.visible {
+          display: grid;
+        }
+
+        &.dragover {
+          background: coral;
+        }
+      }
+
+      section {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        grid-template-rows: auto auto;
+        grid-template-areas:
+          "header remove-button"
+          "content content";
+
+        & > h2 {
+          grid-area: header;
+        }
+        & > .remove-section {
+          grid-area: remove-button;
+          align-self: center;
+        }
+        & > .cards {
+          grid-area: content;
+        }
+      }
+
+      button:not(.hide-info) {
+        border: none;
+        padding: 8px;
+
+        background: lightgray;
+        font: inherit;
+        cursor: pointer;
+
+        display: flex;
+        flex-direction: row;
+        gap: 8px;
+        align-items: center;
+
+        &:hover {
+          background: silver;
+        }
+        &:active {
+          background: gray;
+        }
+      }
+      .remove-section {
+        width: 32px;
+        height: 32px;
+        justify-content: center;
+      }
+      #add-section {
+        margin-top: 1em;
+      }
+
+      .icon {
+        width: 16px;
+        height: 16px;
+
+        &.icon-large {
+          width: 24px;
+          height: 24px;
+        }
+        &.icon-very-large {
+          width: 32px;
+          height: 32px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <svg style="display: none" xmlns="http://www.w3.org/2000/svg">
+      <symbol id="trash-can-icon" viewBox="0 0 16 16">
+        <path
+          fill="currentColor"
+          d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0z"
+        />
+        <path
+          fill="currentColor"
+          d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4zM2.5 3h11V2h-11z"
+        />
+      </symbol>
+      <symbol id="plus-icon" viewBox="0 0 16 16">
+        <path
+          fill="currentColor"
+          d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4"
+        />
+      </symbol>
+    </svg>
+
+    <header>
+      <h1>
+        <span
+          id="player-name"
+          class="editable-text"
+          contenteditable="plaintext-only"
+        ></span
+        >’s Pokémon TCG Pocket cards
+      </h1>
+    </header>
+
+    <div class="info">
+      <span class="info-header">INFO</span>
+      <ul>
+        <li>
+          To add cards, go to
+          <a
+            target="_blank"
+            href="https://game8.co/games/Pokemon-TCG-Pocket/archives/482685"
+            >this list of all cards on Game8</a
+          >, then drag card images into the drop areas below.
+        </li>
+        <li>
+          To remove cards, drag them onto the trash can in the bottom right
+          (only visible while dragging).
+        </li>
+        <li>
+          Once you're done, press Ctrl+S to save this page and send it to a
+          friend!
+        </li>
+      </ul>
+      <button type="button" class="hide-info">Hide this message</button>
+    </div>
+
+    <template id="section-template">
+      <section>
+        <h2>
+          <span
+            class="section-title editable-text"
+            contenteditable="plaintext-only"
+            >New section</span
+          >
+        </h2>
+        <button type="button" class="remove-section">
+          <svg class="icon"><use href="#trash-can-icon" /></svg>
+        </button>
+        <div class="cards"></div>
+      </section>
+    </template>
+
+    <main id="section-container">
+      <section>
+        <h2>
+          <span
+            class="section-title editable-text"
+            contenteditable="plaintext-only"
+            >Looking for:</span
+          >
+        </h2>
+        <button type="button" class="remove-section">
+          <svg class="icon"><use href="#trash-can-icon" /></svg>
+        </button>
+        <div class="cards"></div>
+      </section>
+
+      <section>
+        <h2>
+          <span
+            class="section-title editable-text"
+            contenteditable="plaintext-only"
+            >Have duplicates of:</span
+          >
+        </h2>
+        <button type="button" class="remove-section">
+          <svg class="icon"><use href="#trash-can-icon" /></svg>
+        </button>
+        <div class="cards"></div>
+      </section>
+
+      <section>
+        <h2>
+          <span
+            class="section-title editable-text"
+            contenteditable="plaintext-only"
+            >Have one of:</span
+          >
+        </h2>
+        <button type="button" class="remove-section">
+          <svg class="icon"><use href="#trash-can-icon" /></svg>
+        </button>
+        <div class="cards"></div>
+      </section>
+    </main>
+
+    <button id="add-section">
+      <svg class="icon icon-large"><use href="#plus-icon" /></svg>
+      Add section
+    </button>
+
+    <div id="trash-can">
+      <svg class="icon icon-very-large">
+        <use href="#trash-can-icon" />
+      </svg>
+    </div>
+
+    <script>
+      // Adding cards
+      const cardContainers = document.getElementsByClassName("cards");
+      for (const container of cardContainers) {
+        const addCard = (url) => {
+          const img = document.createElement("img");
+          img.src = url;
+          img.draggable = true;
+          container.appendChild(img);
+          return img;
+        };
+
+        container.addEventListener("dragenter", (e) => {
+          e.preventDefault();
+        });
+        container.addEventListener("dragover", (e) => {
+          e.preventDefault();
+          e.dataTransfer.dropEffect = "copy";
+          container.classList.add("dragover");
+        });
+        container.addEventListener("dragleave", (e) => {
+          e.preventDefault();
+          container.classList.remove("dragover");
+        });
+
+        container.addEventListener("drop", (e) => {
+          e.preventDefault();
+          container.classList.remove("dragover");
+
+          const uris = e.dataTransfer
+            .getData("text/uri-list")
+            .split("\r\n")
+            .filter(Boolean);
+          console.log("got uris:", uris);
+
+          const files = e.dataTransfer.files;
+          console.log("got files:", files);
+
+          if (uris.length > 0) {
+            addCard(uris[0]);
+          } else if (files.length > 0 && files[0].type.startsWith("image/")) {
+            const file = files[0];
+            const reader = new FileReader();
+            reader.addEventListener("load", () => {
+              addCard(reader.result);
+            });
+            reader.readAsDataURL(file);
+          }
+        });
+      }
+
+      // Hide info message
+      const hideButtons = document.getElementsByClassName("hide-info");
+      for (const button of hideButtons) {
+        button.addEventListener("click", (e) => {
+          button.parentNode.remove();
+        });
+      }
+
+      // Removing cards (trash can)
+      const trashCan = document.getElementById("trash-can");
+      let draggedImage = null;
+      document.addEventListener("dragstart", (e) => {
+        if (e.target.tagName === "IMG") {
+          draggedImage = e.target;
+          trashCan.classList.add("visible");
+        }
+      });
+      document.addEventListener("dragend", (e) => {
+        trashCan.classList.remove("visible");
+        draggedImage = null;
+      });
+      trashCan.addEventListener("dragover", (e) => {
+        e.preventDefault();
+        trashCan.classList.add("dragover");
+      });
+      trashCan.addEventListener("dragleave", (e) => {
+        e.preventDefault();
+        trashCan.classList.remove("dragover");
+      });
+      trashCan.addEventListener("drop", (e) => {
+        e.preventDefault();
+        if (draggedImage) {
+          trashCan.classList.remove("visible");
+          trashCan.classList.remove("dragover");
+          draggedImage.remove();
+          draggedImage = null;
+        }
+      });
+
+      // Prevent dropping images from accidentally overwriting the whole page
+      document.addEventListener("dragover", (e) => {
+        e.preventDefault();
+      });
+      document.addEventListener("drop", (e) => {
+        e.preventDefault();
+      });
+
+      // Player name on page title
+      const playerNameElement = document.getElementById("player-name");
+      playerNameElement.addEventListener("input", (e) => {
+        const name = playerNameElement.textContent.trim();
+        document.title =
+          name !== ""
+            ? `${name}'s TCG Pocket card summary`
+            : "TCG Pocket card summary";
+      });
+
+      // Adding sections
+      const sectionTemplate = document.getElementById("section-template");
+      const sectionContainer = document.getElementById("section-container");
+      const addSectionButton = document.getElementById("add-section");
+      sectionContainer.addEventListener("click", (e) => {
+        const removeSectionButton = e.target.closest(".remove-section");
+        if (removeSectionButton != null) {
+          removeSectionButton.parentNode.remove();
+          e.stopPropagation();
+        }
+      });
+      addSectionButton.addEventListener("click", (e) => {
+        const newSection = sectionTemplate.content.cloneNode(true);
+        sectionContainer.appendChild(newSection);
+      });
+    </script>
+  </body>
+</html>
