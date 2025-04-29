@@ -11,6 +11,10 @@
         font-family: sans-serif;
       }
 
+      ul {
+        margin: 0;
+      }
+
       .editable-text {
         display: inline-block;
         appearance: none;
@@ -23,16 +27,12 @@
         cursor: text;
 
         &:empty::after {
-          content: "";
+          content: attr(data-placeholder);
           color: gray;
         }
       }
 
-      #player-name:empty::after {
-        content: "Someone";
-      }
-
-      .cards {
+      .card-container {
         display: flex;
         flex-wrap: wrap;
         gap: 16px;
@@ -52,14 +52,13 @@
             color: gray;
           }
         }
+      }
+      .card-container--dragover {
+        background-color: palegreen;
+      }
 
-        &.dragover {
-          background-color: palegreen;
-        }
-
-        & img {
-          width: 172px;
-        }
+      .card {
+        width: 172px;
       }
 
       .info {
@@ -67,14 +66,12 @@
         border: 2px solid lightskyblue;
         padding: 16px;
       }
-
-      .info-header {
+      .info__header {
         font-weight: bold;
         display: block;
         margin-bottom: 4px;
       }
-
-      .hide-info {
+      .info__hide-button {
         appearance: none;
         background: none;
         text-decoration: underline;
@@ -86,11 +83,7 @@
         margin-top: 4px;
       }
 
-      ul {
-        margin: 0;
-      }
-
-      #trash-can {
+      .trash-can {
         position: fixed;
         bottom: 16px;
         right: 16px;
@@ -102,37 +95,38 @@
         place-items: center;
 
         background: lightgray;
-
-        &.visible {
-          display: grid;
-        }
-
-        &.dragover {
-          background: coral;
-        }
+      }
+      .trash-can--visible {
+        display: grid;
+      }
+      .trash-can--dragover {
+        background: coral;
       }
 
-      section {
+      .section {
         display: grid;
         grid-template-columns: 1fr auto;
         grid-template-rows: auto auto;
         grid-template-areas:
           "header remove-button"
           "content content";
+      }
+      .section__title {
+        grid-area: header;
+      }
+      .section__remove-button {
+        grid-area: remove-button;
+        align-self: center;
 
-        & > h2 {
-          grid-area: header;
-        }
-        & > .remove-section {
-          grid-area: remove-button;
-          align-self: center;
-        }
-        & > .cards {
-          grid-area: content;
-        }
+        width: 32px;
+        height: 32px;
+        justify-content: center;
+      }
+      .section__cards {
+        grid-area: content;
       }
 
-      button:not(.hide-info) {
+      .button {
         border: none;
         padding: 8px;
 
@@ -152,30 +146,25 @@
           background: gray;
         }
       }
-      .remove-section {
-        width: 32px;
-        height: 32px;
-        justify-content: center;
-      }
-      #add-section {
+
+      #add-section-button {
         margin-top: 1em;
       }
 
       .icon {
         width: 16px;
         height: 16px;
-
-        &.icon-large {
-          width: 24px;
-          height: 24px;
-        }
-        &.icon-very-large {
-          width: 32px;
-          height: 32px;
-        }
+      }
+      .icon--large {
+        width: 24px;
+        height: 24px;
+      }
+      .icon--very-large {
+        width: 32px;
+        height: 32px;
       }
 
-      footer {
+      .footer {
         margin-top: 2em;
         color: gray;
       }
@@ -207,13 +196,14 @@
           id="player-name"
           class="editable-text"
           contenteditable="plaintext-only"
+          data-placeholder="Someone"
         ></span
         >’s Pokémon TCG Pocket cards
       </h1>
     </header>
 
     <div class="info">
-      <span class="info-header">INFO</span>
+      <span class="info__header">INFO</span>
       <ul>
         <li>
           To add cards, go to
@@ -232,39 +222,39 @@
           friend!
         </li>
       </ul>
-      <button type="button" class="hide-info">Hide this message</button>
+      <button type="button" class="info__hide-button">Hide this message</button>
     </div>
 
     <template id="section-template">
-      <section>
+      <section class="section">
         <h2>
           <span
-            class="section-title editable-text"
+            class="section__title editable-text"
             contenteditable="plaintext-only"
             >New section</span
           >
         </h2>
-        <button type="button" class="remove-section">
+        <button type="button" class="button section__remove-button">
           <svg class="icon"><use href="#trash-can-icon" /></svg>
         </button>
-        <div class="cards"></div>
+        <div class="card-container section__cards"></div>
       </section>
     </template>
 
     <main id="section-container"></main>
 
-    <button id="add-section">
-      <svg class="icon icon-large"><use href="#plus-icon" /></svg>
+    <button id="add-section-button" class="button">
+      <svg class="icon icon--large"><use href="#plus-icon" /></svg>
       Add section
     </button>
 
-    <div id="trash-can">
-      <svg class="icon icon-very-large">
+    <div id="trash-can" class="trash-can">
+      <svg class="icon icon--very-large">
         <use href="#trash-can-icon" />
       </svg>
     </div>
 
-    <footer>
+    <footer class="footer">
       Template version 3-dev – Create your own at
       <a href="https://tcgp-card-list.arm32.ax/">tcgp-card-list.arm32.ax</a>
     </footer>
@@ -277,10 +267,12 @@
         const section =
           sectionTemplate.content.cloneNode(true).firstElementChild;
 
-        const container = section.getElementsByClassName("cards")[0];
-        const removeButton =
-          section.getElementsByClassName("remove-section")[0];
-        const sectionTitle = section.getElementsByClassName("section-title")[0];
+        const container = section.getElementsByClassName("section__cards")[0];
+        const removeButton = section.getElementsByClassName(
+          "section__remove-button",
+        )[0];
+        const sectionTitle =
+          section.getElementsByClassName("section__title")[0];
 
         if (title) {
           sectionTitle.textContent = title;
@@ -289,6 +281,7 @@
         // Adding cards
         const addCard = (url) => {
           const img = document.createElement("img");
+          img.classList.add("card");
           img.src = url;
           img.draggable = true;
           container.appendChild(img);
@@ -301,16 +294,16 @@
         container.addEventListener("dragover", (e) => {
           e.preventDefault();
           e.dataTransfer.dropEffect = "copy";
-          container.classList.add("dragover");
+          container.classList.add("card-container--dragover");
         });
         container.addEventListener("dragleave", (e) => {
           e.preventDefault();
-          container.classList.remove("dragover");
+          container.classList.remove("card-container--dragover");
         });
 
         container.addEventListener("drop", (e) => {
           e.preventDefault();
-          container.classList.remove("dragover");
+          container.classList.remove("card-container--dragover");
 
           const uris = e.dataTransfer
             .getData("text/uri-list")
@@ -346,16 +339,16 @@
       addSection("Have duplicates of:");
       addSection("Have one of:");
 
-      const addSectionButton = document.getElementById("add-section");
+      const addSectionButton = document.getElementById("add-section-button");
       addSectionButton.addEventListener("click", (e) => {
         addSection("New section");
       });
 
       // Hide info message
-      const hideButtons = document.getElementsByClassName("hide-info");
+      const hideButtons = document.getElementsByClassName("info__hide-button");
       for (const button of hideButtons) {
         button.addEventListener("click", (e) => {
-          button.parentNode.remove();
+          button.closest(".info").remove();
         });
       }
 
@@ -365,26 +358,26 @@
       document.addEventListener("dragstart", (e) => {
         if (e.target.tagName === "IMG") {
           draggedImage = e.target;
-          trashCan.classList.add("visible");
+          trashCan.classList.add("trash-can--visible");
         }
       });
       document.addEventListener("dragend", (e) => {
-        trashCan.classList.remove("visible");
+        trashCan.classList.remove("trash-can--visible");
         draggedImage = null;
       });
       trashCan.addEventListener("dragover", (e) => {
         e.preventDefault();
-        trashCan.classList.add("dragover");
+        trashCan.classList.add("trash-can--dragover");
       });
       trashCan.addEventListener("dragleave", (e) => {
         e.preventDefault();
-        trashCan.classList.remove("dragover");
+        trashCan.classList.remove("trash-can--dragover");
       });
       trashCan.addEventListener("drop", (e) => {
         e.preventDefault();
         if (draggedImage) {
-          trashCan.classList.remove("visible");
-          trashCan.classList.remove("dragover");
+          trashCan.classList.remove("trash-can--visible");
+          trashCan.classList.remove("trash-can--dragover");
           draggedImage.remove();
           draggedImage = null;
         }
