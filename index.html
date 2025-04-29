@@ -260,6 +260,16 @@
     </footer>
 
     <script>
+      // Needs to be global for inline JS in onerror
+      window.resetImgSrc = (img) => {
+        const originalSrc = img.dataset.originalSrc;
+        if (img.src !== originalSrc) {
+          console.warn("Resetting <img> src:", img.src, "->", originalSrc);
+          img.onerror = null;
+          img.src = originalSrc;
+        }
+      };
+
       const sectionTemplate = document.getElementById("section-template");
       const sectionContainer = document.getElementById("section-container");
 
@@ -283,7 +293,9 @@
           const img = document.createElement("img");
           img.classList.add("card");
           img.src = url;
+          img.dataset.originalSrc = url;
           img.draggable = true;
+          img.setAttribute("onerror", "resetImgSrc(this);");
           container.appendChild(img);
           return img;
         };
