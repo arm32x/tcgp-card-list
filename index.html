@@ -174,7 +174,7 @@
           height: 32px;
         }
       }
-      
+
       footer {
         margin-top: 2em;
         color: gray;
@@ -251,49 +251,7 @@
       </section>
     </template>
 
-    <main id="section-container">
-      <section>
-        <h2>
-          <span
-            class="section-title editable-text"
-            contenteditable="plaintext-only"
-            >Looking for:</span
-          >
-        </h2>
-        <button type="button" class="remove-section">
-          <svg class="icon"><use href="#trash-can-icon" /></svg>
-        </button>
-        <div class="cards"></div>
-      </section>
-
-      <section>
-        <h2>
-          <span
-            class="section-title editable-text"
-            contenteditable="plaintext-only"
-            >Have duplicates of:</span
-          >
-        </h2>
-        <button type="button" class="remove-section">
-          <svg class="icon"><use href="#trash-can-icon" /></svg>
-        </button>
-        <div class="cards"></div>
-      </section>
-
-      <section>
-        <h2>
-          <span
-            class="section-title editable-text"
-            contenteditable="plaintext-only"
-            >Have one of:</span
-          >
-        </h2>
-        <button type="button" class="remove-section">
-          <svg class="icon"><use href="#trash-can-icon" /></svg>
-        </button>
-        <div class="cards"></div>
-      </section>
-    </main>
+    <main id="section-container"></main>
 
     <button id="add-section">
       <svg class="icon icon-large"><use href="#plus-icon" /></svg>
@@ -312,9 +270,23 @@
     </footer>
 
     <script>
-      // Adding cards
-      const cardContainers = document.getElementsByClassName("cards");
-      for (const container of cardContainers) {
+      const sectionTemplate = document.getElementById("section-template");
+      const sectionContainer = document.getElementById("section-container");
+
+      const addSection = (title) => {
+        const section =
+          sectionTemplate.content.cloneNode(true).firstElementChild;
+
+        const container = section.getElementsByClassName("cards")[0];
+        const removeButton =
+          section.getElementsByClassName("remove-section")[0];
+        const sectionTitle = section.getElementsByClassName("section-title")[0];
+
+        if (title) {
+          sectionTitle.textContent = title;
+        }
+
+        // Adding cards
         const addCard = (url) => {
           const img = document.createElement("img");
           img.src = url;
@@ -360,7 +332,24 @@
             reader.readAsDataURL(file);
           }
         });
-      }
+
+        // Removing section
+        removeButton.addEventListener("click", (e) => {
+          section.remove();
+        });
+
+        sectionContainer.appendChild(section);
+      };
+
+      // Default sections
+      addSection("Looking for:");
+      addSection("Have duplicates of:");
+      addSection("Have one of:");
+
+      const addSectionButton = document.getElementById("add-section");
+      addSectionButton.addEventListener("click", (e) => {
+        addSection("New section");
+      });
 
       // Hide info message
       const hideButtons = document.getElementsByClassName("hide-info");
@@ -417,22 +406,6 @@
           name !== ""
             ? `${name}'s TCG Pocket card summary`
             : "TCG Pocket card summary";
-      });
-
-      // Adding sections
-      const sectionTemplate = document.getElementById("section-template");
-      const sectionContainer = document.getElementById("section-container");
-      const addSectionButton = document.getElementById("add-section");
-      sectionContainer.addEventListener("click", (e) => {
-        const removeSectionButton = e.target.closest(".remove-section");
-        if (removeSectionButton != null) {
-          removeSectionButton.parentNode.remove();
-          e.stopPropagation();
-        }
-      });
-      addSectionButton.addEventListener("click", (e) => {
-        const newSection = sectionTemplate.content.cloneNode(true);
-        sectionContainer.appendChild(newSection);
       });
     </script>
   </body>
