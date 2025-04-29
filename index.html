@@ -164,10 +164,37 @@
         width: 32px;
         height: 32px;
       }
+      .icon--excessively-large {
+        width: 96px;
+        height: 96px;
+      }
 
       .footer {
         margin-top: 2em;
         color: gray;
+      }
+
+      .overlay {
+        display: none;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        gap: 32px;
+
+        position: fixed;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        left: 0;
+
+        background-color: rgba(255, 255, 255, 0.75);
+        color: gray;
+        font-size: 2em;
+
+        user-select: none;
+      }
+      .overlay--visible {
+        display: flex;
       }
     </style>
   </head>
@@ -187,6 +214,18 @@
         <path
           fill="currentColor"
           d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4"
+        />
+      </symbol>
+      <symbol id="import-icon" viewBox="0 0 16 16">
+        <path
+          fill="currentColor"
+          fill-rule="evenodd"
+          d="M3.5 6a.5.5 0 0 0-.5.5v8a.5.5 0 0 0 .5.5h9a.5.5 0 0 0 .5-.5v-8a.5.5 0 0 0-.5-.5h-2a.5.5 0 0 1 0-1h2A1.5 1.5 0 0 1 14 6.5v8a1.5 1.5 0 0 1-1.5 1.5h-9A1.5 1.5 0 0 1 2 14.5v-8A1.5 1.5 0 0 1 3.5 5h2a.5.5 0 0 1 0 1z"
+        />
+        <path
+          fill="currentColor"
+          fill-rule="evenodd"
+          d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708z"
         />
       </symbol>
     </svg>
@@ -303,6 +342,13 @@
       <a href="https://tcgp-card-list.arm32.ax/">tcgp-card-list.arm32.ax</a>
     </footer>
 
+    <div id="import-overlay" class="overlay">
+      <svg class="icon overlay__icon icon--excessively-large">
+        <use href="#import-icon" />
+      </svg>
+      Drop to import
+    </div>
+
     <script>
       // Needs to be global for inline JS in onerror
       window.resetImgSrc = (img) => {
@@ -315,6 +361,17 @@
 
       const sectionTemplate = document.getElementById("section-template");
       const sectionContainer = document.getElementById("section-container");
+
+      const makeCard = ({ url, altText, originalUrl }) => {
+        const img = document.createElement("img");
+        img.classList.add("card");
+        img.alt = altText;
+        img.src = url;
+        img.dataset.originalSrc = originalUrl ?? url;
+        img.draggable = true;
+        img.setAttribute("onerror", "resetImgSrc(this);");
+        return img;
+      };
 
       const setupSection = (section, title) => {
         const container = section.getElementsByClassName("section__cards")[0];
@@ -329,14 +386,8 @@
         }
 
         // Adding cards
-        const addCard = (url, altText) => {
-          const img = document.createElement("img");
-          img.classList.add("card");
-          img.alt = altText;
-          img.src = url;
-          img.dataset.originalSrc = url;
-          img.draggable = true;
-          img.setAttribute("onerror", "resetImgSrc(this);");
+        const addCard = (options) => {
+          const img = makeCard(options);
           container.appendChild(img);
           return img;
         };
@@ -377,12 +428,12 @@
           const files = e.dataTransfer.files;
 
           if (uris.length > 0) {
-            addCard(uris[0], altText);
+            addCard({ url: uris[0], altText });
           } else if (files.length > 0 && files[0].type.startsWith("image/")) {
             const file = files[0];
             const reader = new FileReader();
             reader.addEventListener("load", () => {
-              addCard(reader.result, altText);
+              addCard({ url: reader.result, altText });
             });
             reader.readAsDataURL(file);
           }
@@ -399,6 +450,7 @@
           sectionTemplate.content.cloneNode(true).firstElementChild;
         setupSection(section, title);
         sectionContainer.appendChild(section);
+        return section;
       };
 
       const existingSections = document.getElementsByClassName("section");
@@ -450,22 +502,109 @@
         }
       });
 
-      // Prevent dropping images from accidentally overwriting the whole page
-      document.addEventListener("dragover", (e) => {
-        e.preventDefault();
-      });
-      document.addEventListener("drop", (e) => {
-        e.preventDefault();
-      });
-
       // Player name on page title
       const playerNameElement = document.getElementById("player-name");
-      playerNameElement.addEventListener("input", (e) => {
+      const refreshPlayerName = () => {
         const name = playerNameElement.textContent.trim();
         document.title =
           name !== ""
             ? `${name}'s TCG Pocket card list`
             : "TCG Pocket card list";
+      };
+      playerNameElement.addEventListener("input", (e) => refreshPlayerName());
+
+      // Importing data from current and previous versions
+      // Also prevents dropping images from accidentally overwriting the whole page
+      const closestPreviousSibling = (el, selector) => {
+        while ((el = el.previousElementSibling)) {
+          if (el.matches(selector)) {
+            return el;
+          }
+        }
+        return null;
+      };
+      const doImport = (oldDocument) => {
+        const rootElement = oldDocument.documentElement;
+
+        let version = Number(rootElement.getAttribute("data-template-version"));
+        if (Number.isNaN(version)) {
+          version = 1; // Version 1 and 2 did not have version numbers
+        }
+
+        sectionContainer.replaceChildren();
+
+        // Currently, the only version difference we have to care about is which
+        // class name we use
+        const cardContainerClassName =
+          version >= 3 ? "card-container" : "cards";
+
+        // Step 1: Copy sections and cards
+        const oldCardContainers = oldDocument.getElementsByClassName(
+          cardContainerClassName,
+        );
+        for (const oldContainer of oldCardContainers) {
+          const oldSectionTitle = closestPreviousSibling(
+            oldContainer,
+            "h2",
+          ).textContent;
+
+          const section = addSection(oldSectionTitle);
+          const container = section.getElementsByClassName("section__cards")[0];
+
+          const oldImgElements = oldContainer.querySelectorAll("img");
+          for (const oldImg of oldImgElements) {
+            const img = makeCard({
+              url: oldImg.src,
+              altText: oldImg.alt,
+              originalUrl: oldImg.dataset.originalSrc,
+            });
+            container.appendChild(img);
+          }
+        }
+
+        // Step 2: Copy player name
+        const oldPlayerName =
+          oldDocument.getElementById("player-name").textContent;
+        playerNameElement.textContent = oldPlayerName;
+        refreshPlayerName();
+      };
+
+      const importOverlay = document.getElementById("import-overlay");
+      document.addEventListener("dragover", (e) => {
+        e.preventDefault();
+        const items = e.dataTransfer.items;
+        if (
+          items.length === 1 &&
+          items[0].kind === "file" &&
+          items[0].type === "text/html"
+        ) {
+          importOverlay.classList.add("overlay--visible");
+        }
+      });
+      document.addEventListener("dragleave", (e) => {
+        e.preventDefault();
+        importOverlay.classList.remove("overlay--visible");
+      });
+      document.addEventListener("drop", (e) => {
+        e.preventDefault();
+        importOverlay.classList.remove("overlay--visible");
+
+        const files = e.dataTransfer.files;
+        if (files.length === 1 && files[0].type === "text/html") {
+          const file = files[0];
+          const reader = new FileReader();
+          reader.addEventListener("load", () => {
+            const domParser = new DOMParser();
+            const doc = domParser.parseFromString(reader.result, "text/html");
+            try {
+              doImport(doc);
+            } catch (err) {
+              console.error("Failed to import file:", err);
+              alert("Failed to import file. Are you sure it's a card list?");
+            }
+          });
+          reader.readAsText(file);
+        }
       });
     </script>
   </body>
