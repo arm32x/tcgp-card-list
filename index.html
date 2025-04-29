@@ -241,7 +241,49 @@
       </section>
     </template>
 
-    <main id="section-container"></main>
+    <main id="section-container">
+      <section class="section">
+        <h2>
+          <span
+            class="section__title editable-text"
+            contenteditable="plaintext-only"
+            >Looking for:</span
+          >
+        </h2>
+        <button type="button" class="button section__remove-button">
+          <svg class="icon"><use href="#trash-can-icon" /></svg>
+        </button>
+        <div class="card-container section__cards"></div>
+      </section>
+
+      <section class="section">
+        <h2>
+          <span
+            class="section__title editable-text"
+            contenteditable="plaintext-only"
+            >Have duplicates of:</span
+          >
+        </h2>
+        <button type="button" class="button section__remove-button">
+          <svg class="icon"><use href="#trash-can-icon" /></svg>
+        </button>
+        <div class="card-container section__cards"></div>
+      </section>
+
+      <section class="section">
+        <h2>
+          <span
+            class="section__title editable-text"
+            contenteditable="plaintext-only"
+            >Have one of:</span
+          >
+        </h2>
+        <button type="button" class="button section__remove-button">
+          <svg class="icon"><use href="#trash-can-icon" /></svg>
+        </button>
+        <div class="card-container section__cards"></div>
+      </section>
+    </main>
 
     <button id="add-section-button" class="button">
       <svg class="icon icon--large"><use href="#plus-icon" /></svg>
@@ -273,10 +315,7 @@
       const sectionTemplate = document.getElementById("section-template");
       const sectionContainer = document.getElementById("section-container");
 
-      const addSection = (title) => {
-        const section =
-          sectionTemplate.content.cloneNode(true).firstElementChild;
-
+      const setupSection = (section, title) => {
         const container = section.getElementsByClassName("section__cards")[0];
         const removeButton = section.getElementsByClassName(
           "section__remove-button",
@@ -352,14 +391,19 @@
         removeButton.addEventListener("click", (e) => {
           section.remove();
         });
+      };
 
+      const addSection = (title) => {
+        const section =
+          sectionTemplate.content.cloneNode(true).firstElementChild;
+        setupSection(section, title);
         sectionContainer.appendChild(section);
       };
 
-      // Default sections
-      addSection("Looking for:");
-      addSection("Have duplicates of:");
-      addSection("Have one of:");
+      const existingSections = document.getElementsByClassName("section");
+      for (const section of existingSections) {
+        setupSection(section);
+      }
 
       const addSectionButton = document.getElementById("add-section-button");
       addSectionButton.addEventListener("click", (e) => {
