@@ -289,9 +289,10 @@
         }
 
         // Adding cards
-        const addCard = (url) => {
+        const addCard = (url, altText) => {
           const img = document.createElement("img");
           img.classList.add("card");
+          img.alt = altText;
           img.src = url;
           img.dataset.originalSrc = url;
           img.draggable = true;
@@ -321,18 +322,27 @@
             .getData("text/uri-list")
             .split("\r\n")
             .filter(Boolean);
-          console.log("got uris:", uris);
+
+          let altText = undefined;
+          const html = e.dataTransfer.getData("text/html");
+          if (html != null) {
+            const domParser = new DOMParser();
+            const doc = domParser.parseFromString(html, "text/html");
+            const img = doc.querySelector("img");
+            if (img != null) {
+              altText = img.alt;
+            }
+          }
 
           const files = e.dataTransfer.files;
-          console.log("got files:", files);
 
           if (uris.length > 0) {
-            addCard(uris[0]);
+            addCard(uris[0], altText);
           } else if (files.length > 0 && files[0].type.startsWith("image/")) {
             const file = files[0];
             const reader = new FileReader();
             reader.addEventListener("load", () => {
-              addCard(reader.result);
+              addCard(reader.result, altText);
             });
             reader.readAsDataURL(file);
           }
