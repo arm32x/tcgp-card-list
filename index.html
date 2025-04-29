@@ -307,9 +307,8 @@
       // Needs to be global for inline JS in onerror
       window.resetImgSrc = (img) => {
         const originalSrc = img.dataset.originalSrc;
-        if (img.src !== originalSrc) {
+        if (originalSrc != null && img.src !== originalSrc) {
           console.warn("Resetting <img> src:", img.src, "->", originalSrc);
-          img.onerror = null;
           img.src = originalSrc;
         }
       };
